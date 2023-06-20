@@ -1,9 +1,9 @@
 PHP Process Pool
 ================
 
-[![Latest Version](https://img.shields.io/github/release/andersondanilo/process-pool.svg?style=flat-square)](https://github.com/andersondanilo/process-pool/releases)
-[![Total Downloads](https://poser.pugx.org/andersondanilo/process-pool/downloads)](//packagist.org/packages/andersondanilo/process-pool)
-![CI](https://github.com/andersondanilo/process-pool/workflows/CI/badge.svg)
+[![Latest Version](https://img.shields.io/github/release/Gemorroj/process-pool.svg?style=flat-square)](https://github.com/Gemorroj/process-pool/releases)
+[![Total Downloads](https://poser.pugx.org/Gemorroj/process-pool/downloads)](//packagist.org/packages/Gemorroj/process-pool)
+![CI](https://github.com/Gemorroj/process-pool/workflows/CI/badge.svg)
 
 PHP Process Pool is a simple process pool using symfony process
 

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ProcessPool\Events;
 
-use Symfony\Contracts\EventDispatcher\Event;
 use Symfony\Component\Process\Process;
+use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class ProcessEvent extends Event
 {

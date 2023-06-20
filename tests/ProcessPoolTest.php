@@ -1,68 +1,65 @@
 <?php
 
-namespace Tests;
+declare(strict_types=1);
 
-use ProcessPool\Events\ProcessFinished;
-use ProcessPool\ProcessPool;
-use Symfony\Component\Process\Process;
+namespace ProcessPool\Tests;
+
 use PHPUnit\Framework\TestCase;
+use ProcessPool\Events\ProcessFinished;
+use ProcessPool\Options;
+use ProcessPool\ProcessPool;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Generator;
+use Symfony\Component\Process\PhpProcess;
 
 class ProcessPoolTest extends TestCase
 {
-    public function testWorksWithGenerators()
+    public function testWorksWithGenerators(): void
     {
         $this->assertFinishProcessesIn(6, 5);
     }
 
-    public function testHandleExceptions()
+    public function testHandleExceptions(): void
     {
-        $this->assertFinishProcessesIn(2, 5, 1);
+        $this->assertFinishProcessesIn(2, 5, 1.0);
     }
 
-    private function assertFinishProcessesIn($expectedTime, $countProcesses, $timeout = null)
+    private function assertFinishProcessesIn(int $expectedTime, int $countProcesses, float $timeout = null): void
     {
         $processes = $this->makeSleepProcesses($countProcesses, $timeout);
         $countFinished = 0;
+        $options = new Options(2);
 
-
-        $pool = new ProcessPool($processes);
-        $pool->setConcurrency(2);
-        $pool->onProcessFinished(function ($event) use (&$countFinished) {
+        $pool = new ProcessPool($processes, $options);
+        $pool->onProcessFinished(static function (ProcessFinished $event) use (&$countFinished): void {
             $process = $event->getProcess();
             $exception = $event->getException();
-            $countFinished++;
+            ++$countFinished;
         });
 
-        // test set event handler
-        $pool->setEventDispatcher($pool->getEventDispatcher());
-
-        $start = microtime(true);
+        $start = \microtime(true);
 
         $pool->wait();
 
-        $this->assertEquals($expectedTime, round(microtime(true) - $start), 'assert duration');
         $this->assertEquals($countProcesses, $countFinished);
+        $this->assertEquals($expectedTime, \round(\microtime(true) - $start), 'assert duration');
     }
 
-    public function testThrowExceptions()
+    public function testThrowExceptions(): void
     {
-        $processes = $this->makeSleepProcesses(6, 5);
-        $pool = new ProcessPool($processes, ['throwExceptions' => true]);
-        $pool->setConcurrency(6);
+        $processes = $this->makeSleepProcesses(6, 5.0);
+        $options = new Options(6, true);
+        $pool = new ProcessPool($processes, $options);
 
         $this->expectException(ProcessTimedOutException::class);
 
         $pool->wait();
     }
 
-    private function makeSleepProcesses($count, $timeout = null): Generator
+    private function makeSleepProcesses(int $count, float $timeout = null): \Generator
     {
-        for ($i = 0; $i < $count; $i++) {
-            $process = new Process(['sleep', $i]);
-
-            if (!is_null($timeout)) {
+        for ($i = 0; $i < $count; ++$i) {
+            $process = new PhpProcess("<?php sleep($i); echo $i;");
+            if (null !== $timeout) {
                 $process->setTimeout($timeout);
             }
 

@@ -1,13 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ProcessPool\Events;
 
-use Symfony\Component\Process\Process;
-
-class ProcessStarted extends ProcessEvent
+final class ProcessStarted extends ProcessEvent
 {
     public function getName(): string
     {
-        return static::PROCESS_STARTED;
+        return self::PROCESS_STARTED;
     }
 }

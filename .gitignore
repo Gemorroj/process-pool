@@ -1,5 +1,12 @@
-vendor/
+.idea
+composer.phar
 composer.lock
-clover.xml
-.phpunit.cache
+vendor/
+
+phpstan.neon
+
+phpunit.xml
 .phpunit.result.cache
+
+.php-cs-fixer.php
+.php-cs-fixer.cache

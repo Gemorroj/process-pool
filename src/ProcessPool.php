@@ -1,67 +1,52 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ProcessPool;
 
-use Iterator;
 use ProcessPool\Events\ProcessEvent;
 use ProcessPool\Events\ProcessFinished;
 use ProcessPool\Events\ProcessStarted;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Exception\RuntimeException;
 use Symfony\Component\Process\Process;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * Process pool allow you to run a constant number
- * of parallel processes
+ * of parallel processes.
  */
 class ProcessPool
 {
-    /** @var Iterator<Process> */
-    private Iterator $queue;
+    /** @var \Iterator<Process> */
+    private \Iterator $queue;
 
     /** @var array<Process> */
     private array $running = [];
-
-    /** @var array<string, mixed> */
-    private array $options;
-
-    private int $concurrency;
+    private Options $options;
 
     private EventDispatcherInterface $eventDispatcher;
 
     /**
-     * Accept any type of iterator, inclusive Generator
+     * Accept any type of iterator, inclusive Generator.
      *
-     * @param Iterator<Process> $queue
-     * @param array<string, mixed> $options
+     * @param \Iterator<Process> $queue
      */
-    public function __construct(Iterator $queue, array $options = [])
+    public function __construct(\Iterator $queue, Options $options = null, EventDispatcher $eventDispatcher = null)
     {
-        $this->eventDispatcher = new EventDispatcher();
+        $this->eventDispatcher = $eventDispatcher ?? new EventDispatcher();
+        $this->options = $options ?? new Options();
         $this->queue = $queue;
-        $this->options = array_merge($this->getDefaultOptions(), $options);
-        $this->concurrency = $this->options['concurrency'];
-    }
-
-    /** @return array<string, mixed> */
-    private function getDefaultOptions(): array
-    {
-        return [
-            'concurrency' => '5',
-            'eventPreffix' => 'process_pool',
-            'throwExceptions' => false,
-        ];
     }
 
     /**
-     * Start and wait until all processes finishes
+     * Start and wait until all processes finishes.
      */
     public function wait(): void
     {
         $this->startNextProcesses();
 
-        while (count($this->running) > 0) {
+        while (\count($this->running) > 0) {
             /** @var Process $process */
             foreach ($this->running as $key => $process) {
                 $exception = null;
@@ -72,7 +57,7 @@ class ProcessPool
                     $isRunning = false;
                     $exception = $e;
 
-                    if ($this->shouldThrowExceptions()) {
+                    if ($this->options->throwExceptions) {
                         throw $e;
                     }
                 }
@@ -90,24 +75,24 @@ class ProcessPool
                     $this->dispatchEvent($event);
                 }
             }
-            usleep(1000);
+            \usleep(1000);
         }
     }
 
     public function onProcessFinished(callable $callback): void
     {
-        $eventName = $this->options['eventPreffix'] . '.' . ProcessEvent::PROCESS_FINISHED;
-        $this->getEventDispatcher()->addListener($eventName, $callback);
+        $eventName = $this->options->eventPrefix.'.'.ProcessEvent::PROCESS_FINISHED;
+        $this->eventDispatcher->addListener($eventName, $callback);
     }
 
     /**
-     * Start next processes until fill the concurrency limit
+     * Start next processes until fill the concurrency limit.
      */
     private function startNextProcesses(): void
     {
-        $concurrency = $this->getConcurrency();
+        $concurrency = $this->options->concurrency;
 
-        while (count($this->running) < $concurrency && $this->queue->valid()) {
+        while (\count($this->running) < $concurrency && $this->queue->valid()) {
             $process = $this->queue->current();
             $process->start();
 
@@ -119,49 +104,11 @@ class ProcessPool
         }
     }
 
-    private function shouldThrowExceptions(): bool
-    {
-        return (bool) $this->options['throwExceptions'];
-    }
-
-    /**
-     * Get processes concurrency, default 5
-     */
-    public function getConcurrency(): int
-    {
-        return $this->concurrency;
-    }
-
-    /**
-     * @return static
-     */
-    public function setConcurrency(int $concurrency)
-    {
-        $this->concurrency = $concurrency;
-
-        return $this;
-    }
-
     private function dispatchEvent(ProcessEvent $event): void
     {
-        $eventPreffix = $this->options['eventPreffix'];
+        $eventPrefix = $this->options->eventPrefix;
         $eventName = $event->getName();
 
-        $this->getEventDispatcher()->dispatch($event, "$eventPreffix.$eventName");
-    }
-
-    public function getEventDispatcher(): EventDispatcherInterface
-    {
-        return $this->eventDispatcher;
-    }
-
-    /**
-     * @return static
-     */
-    public function setEventDispatcher(EventDispatcherInterface $eventDispatcher)
-    {
-        $this->eventDispatcher = $eventDispatcher;
-
-        return $this;
+        $this->eventDispatcher->dispatch($event, "$eventPrefix.$eventName");
     }
 }
