@@ -8,9 +8,9 @@ final class ProcessFinished extends ProcessEvent
 {
     private ?\Exception $exception = null;
 
-    public function getName(): string
+    public function getName(): ProcessEventName
     {
-        return self::PROCESS_FINISHED;
+        return ProcessEventName::PROCESS_FINISHED;
     }
 
     public function setException(\Exception $exception): self

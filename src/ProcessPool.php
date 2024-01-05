@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProcessPool;
 
 use ProcessPool\Events\ProcessEvent;
+use ProcessPool\Events\ProcessEventName;
 use ProcessPool\Events\ProcessFinished;
 use ProcessPool\Events\ProcessStarted;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -81,7 +82,8 @@ class ProcessPool
 
     public function onProcessFinished(callable $callback): void
     {
-        $eventName = $this->options->eventPrefix.'.'.ProcessEvent::PROCESS_FINISHED;
+        $eventName = $this->prepareEventName(ProcessEventName::PROCESS_FINISHED);
+
         $this->eventDispatcher->addListener($eventName, $callback);
     }
 
@@ -106,9 +108,14 @@ class ProcessPool
 
     private function dispatchEvent(ProcessEvent $event): void
     {
-        $eventPrefix = $this->options->eventPrefix;
-        $eventName = $event->getName();
+        $this->eventDispatcher->dispatch($event, $this->prepareEventName($event->getName()));
+    }
 
-        $this->eventDispatcher->dispatch($event, "$eventPrefix.$eventName");
+    private function prepareEventName(ProcessEventName $processEventName): string
+    {
+        $eventPrefix = $this->options->eventPrefix;
+        $eventName = $processEventName->value;
+
+        return "$eventPrefix.$eventName";
     }
 }

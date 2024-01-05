@@ -6,8 +6,8 @@ namespace ProcessPool\Events;
 
 final class ProcessStarted extends ProcessEvent
 {
-    public function getName(): string
+    public function getName(): ProcessEventName
     {
-        return self::PROCESS_STARTED;
+        return ProcessEventName::PROCESS_STARTED;
     }
 }
