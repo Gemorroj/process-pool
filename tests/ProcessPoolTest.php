@@ -11,7 +11,7 @@ use ProcessPool\ProcessPool;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\PhpProcess;
 
-class ProcessPoolTest extends TestCase
+final class ProcessPoolTest extends TestCase
 {
     public function testWorksWithGenerators(): void
     {
@@ -23,7 +23,7 @@ class ProcessPoolTest extends TestCase
         $this->assertFinishProcessesIn(2, 5, 1.0);
     }
 
-    private function assertFinishProcessesIn(int $expectedTime, int $countProcesses, float $timeout = null): void
+    private function assertFinishProcessesIn(int $expectedTime, int $countProcesses, ?float $timeout = null): void
     {
         $processes = $this->makeSleepProcesses($countProcesses, $timeout);
         $countFinished = 0;
@@ -55,7 +55,7 @@ class ProcessPoolTest extends TestCase
         $pool->wait();
     }
 
-    private function makeSleepProcesses(int $count, float $timeout = null): \Generator
+    private function makeSleepProcesses(int $count, ?float $timeout = null): \Generator
     {
         for ($i = 0; $i < $count; ++$i) {
             $process = new PhpProcess("<?php sleep($i); echo $i;");

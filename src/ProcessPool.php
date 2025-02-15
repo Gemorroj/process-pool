@@ -33,7 +33,7 @@ class ProcessPool
      *
      * @param \Iterator<Process> $queue
      */
-    public function __construct(\Iterator $queue, Options $options = null, EventDispatcher $eventDispatcher = null)
+    public function __construct(\Iterator $queue, ?Options $options = null, ?EventDispatcher $eventDispatcher = null)
     {
         $this->eventDispatcher = $eventDispatcher ?? new EventDispatcher();
         $this->options = $options ?? new Options();

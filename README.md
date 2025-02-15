@@ -3,7 +3,7 @@ PHP Process Pool
 
 [![License](https://poser.pugx.org/gemorroj/process-pool/license)](https://packagist.org/packages/gemorroj/process-pool)
 [![Latest Stable Version](https://poser.pugx.org/gemorroj/process-pool/v/stable)](https://packagist.org/packages/gemorroj/process-pool)
-[![Continuous Integration](https://github.com/Gemorroj/process-pool/workflows/Continuous%20Integration/badge.svg?branch=master)](https://github.com/Gemorroj/process-pool/actions?query=workflow%3A%22Continuous+Integration%22)
+[![Continuous Integration](https://github.com/Gemorroj/process-pool/workflows/Continuous%20Integration/badge.svg)](https://github.com/Gemorroj/process-pool/actions?query=workflow%3A%22Continuous+Integration%22)
 
 PHP Process Pool is a simple process pool using Symfony Process
 
