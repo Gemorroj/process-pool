@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ProcessPool;
 
-readonly class Options
+final readonly class Options
 {
     public function __construct(
         public int $concurrency = 5,

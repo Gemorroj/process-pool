@@ -9,11 +9,8 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class ProcessEvent extends Event
 {
-    private Process $process;
-
-    public function __construct(Process $process)
+    public function __construct(private readonly Process $process)
     {
-        $this->process = $process;
     }
 
     abstract public function getName(): ProcessEventName;

@@ -17,7 +17,7 @@ use Symfony\Component\Process\Process;
  * Process pool allow you to run a constant number
  * of parallel processes.
  */
-class ProcessPool
+final class ProcessPool
 {
     /** @var \Iterator<Process> */
     private \Iterator $queue;
