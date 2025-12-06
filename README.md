@@ -8,7 +8,7 @@ PHP Process Pool
 PHP Process Pool is a simple process pool using Symfony Process
 
 ### System requirements:
-- PHP >= 8.2
+- PHP >= 8.4
 - proc_open
 
 ### Installation:
