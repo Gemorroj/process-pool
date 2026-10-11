@@ -14,70 +14,99 @@ use Symfony\Component\Process\Exception\RuntimeException;
 use Symfony\Component\Process\Process;
 
 /**
- * Process pool allow you to run a constant number
+ * Process pool allows you to run a constant number
  * of parallel processes.
  */
 final class ProcessPool
 {
-    /** @var \Iterator<Process> */
-    private \Iterator $queue;
-
     /** @var array<Process> */
     private array $running = [];
-    private Options $options;
 
-    private EventDispatcherInterface $eventDispatcher;
+    private bool $started = false;
 
     /**
-     * Accept any type of iterator, inclusive Generator.
+     * Accepts any type of iterator, including Generator.
      *
      * @param \Iterator<Process> $queue
      */
-    public function __construct(\Iterator $queue, ?Options $options = null, ?EventDispatcher $eventDispatcher = null)
+    public function __construct(private readonly \Iterator $queue, private readonly Options $options = new Options(), private readonly EventDispatcherInterface $eventDispatcher = new EventDispatcher())
     {
-        $this->eventDispatcher = $eventDispatcher ?? new EventDispatcher();
-        $this->options = $options ?? new Options();
-        $this->queue = $queue;
     }
 
     /**
-     * Start and wait until all processes finishes.
+     * Start and wait until all processes finish.
      */
     public function wait(): void
     {
-        $this->startNextProcesses();
+        \iterator_count($this->run());
+    }
 
-        while (\count($this->running) > 0) {
-            /** @var Process $process */
-            foreach ($this->running as $key => $process) {
-                $exception = null;
-                try {
-                    $process->checkTimeout();
-                    $isRunning = $process->isRunning();
-                } catch (RuntimeException $e) {
-                    $isRunning = false;
-                    $exception = $e;
+    /**
+     * Start processes and yield a ProcessFinished event as soon as each
+     * process finishes, so results can be consumed while other processes
+     * are still running.
+     *
+     * The generator holds at most {@see Options::$concurrency} processes in
+     * memory. Stopping iteration early stops the still running processes.
+     *
+     * A pool is single-use: calling {@see run()} (or {@see wait()}) more than
+     * once on the same instance throws a {@see \LogicException}.
+     *
+     * @throws \LogicException when the pool has already been run
+     *
+     * @return \Generator<int, ProcessFinished>
+     */
+    public function run(): \Generator
+    {
+        if ($this->started) {
+            throw new \LogicException('ProcessPool can only be run once.');
+        }
 
-                    if ($this->options->throwExceptions) {
-                        throw $e;
+        $this->started = true;
+
+        try {
+            $this->startNextProcesses();
+
+            while ([] !== $this->running) {
+                foreach ($this->running as $process) {
+                    $exception = null;
+                    try {
+                        $process->checkTimeout();
+                        $isRunning = $process->isRunning();
+                    } catch (RuntimeException $e) {
+                        $isRunning = false;
+                        $exception = $e;
+
+                        if ($this->options->throwExceptions) {
+                            throw $e;
+                        }
                     }
-                }
 
-                if (!$isRunning) {
-                    unset($this->running[$key]);
+                    if ($isRunning) {
+                        continue;
+                    }
+
+                    $this->forget($process);
+
+                    $event = new ProcessFinished($process, $exception);
+                    $this->dispatchEvent($event);
+
                     $this->startNextProcesses();
 
-                    $event = new ProcessFinished($process);
-
-                    if ($exception) {
-                        $event->setException($exception);
-                    }
-
-                    $this->dispatchEvent($event);
+                    yield $event;
                 }
+                \usleep(1000);
             }
-            \usleep(1000);
+        } finally {
+            $this->stopRunningProcesses();
         }
+    }
+
+    public function onProcessStarted(callable $callback): void
+    {
+        $eventName = $this->prepareEventName(ProcessEventName::PROCESS_STARTED);
+
+        $this->eventDispatcher->addListener($eventName, $callback);
     }
 
     public function onProcessFinished(callable $callback): void
@@ -88,7 +117,7 @@ final class ProcessPool
     }
 
     /**
-     * Start next processes until fill the concurrency limit.
+     * Start the next processes until the concurrency limit is reached.
      */
     private function startNextProcesses(): void
     {
@@ -96,14 +125,40 @@ final class ProcessPool
 
         while (\count($this->running) < $concurrency && $this->queue->valid()) {
             $process = $this->queue->current();
-            $process->start();
-
-            $this->dispatchEvent(new ProcessStarted($process));
+            $this->queue->next();
 
             $this->running[] = $process;
 
-            $this->queue->next();
+            $process->start();
+
+            $this->dispatchEvent(new ProcessStarted($process));
         }
+    }
+
+    /**
+     * Remove a finished process from the running set, keeping it hole-free.
+     */
+    private function forget(Process $process): void
+    {
+        $this->running = \array_values(\array_filter(
+            $this->running,
+            static fn (Process $running): bool => $running !== $process,
+        ));
+    }
+
+    /**
+     * Stop and forget every still running process.
+     *
+     * Used to avoid leaving orphaned processes behind when {@see run()}
+     * exits early (e.g. {@see Options::$throwExceptions} is enabled).
+     */
+    private function stopRunningProcesses(): void
+    {
+        foreach ($this->running as $process) {
+            $process->stop();
+        }
+
+        $this->running = [];
     }
 
     private function dispatchEvent(ProcessEvent $event): void

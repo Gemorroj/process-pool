@@ -1,5 +1,6 @@
 {
     "name": "gemorroj/process-pool",
+    "description": "PHP Process Pool (Using symfony process)",
     "type": "library",
     "license": "MIT",
     "authors": [

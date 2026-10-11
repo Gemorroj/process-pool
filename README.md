@@ -21,13 +21,21 @@ composer require gemorroj/process-pool
 use ProcessPool\ProcessPool;
 use Symfony\Component\Process\Process;
 
-function processGenerator(int $count): \Generator {
+function processGenerator(): \Generator {
     for ($i = 0; $i < 10; $i++) {
         yield new Process(['sleep', $i]);
     }
 }
 
-$processes = processGenerator(10);
-$pool = new ProcessPool($processes);
-$pool->wait();
+$pool = new ProcessPool(processGenerator());
+$pool->wait(); // run all processes and wait for completion
+```
+
+`run()` is a streaming alternative to `wait()`: it yields a `ProcessFinished`
+event as soon as each process finishes.
+
+```php
+foreach ($pool->run() as $event) {
+    echo $event->getProcess()->getOutput();
+}
 ```
