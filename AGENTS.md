@@ -13,6 +13,10 @@ Namespace `ProcessPool\`, sources in `src/`, tests in `tests/`.
 - PSR-12, `declare(strict_types=1);`, typed code.
 - Keep classes final where possible.
 
+## Conventions
+
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
+
 ## Commands
 
 ```bash
